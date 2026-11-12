@@ -1,0 +1,109 @@
+SnapReels - Release Changelog
+
+Version 1.2.2 - 07-11-2026
+----------------------------------------
+DRAMA COMMENTS SYSTEM & MODERATION (NEW FEATURE)
+*   [Multi-Platform / Feature] Full Drama Comments System: Implemented an end-to-end interactive commenting system across the Website (Next.js 15), Native Android App (Jetpack Compose), and Flutter App.
+*   [Admin Panel] Per-Drama Comment Control: Added an `allowComments` toggle switch in `/admin/series/edit/[id]` and `/admin/series/add` to easily enable or disable user comments on individual dramas.
+*   [Admin Panel] Comments Moderation Dashboard (`/admin/comments`): Added a dedicated Comments Management page to the Admin Sidebar (with `MessageSquare` icon). Admins can view all comments, view commenter details (avatar, username, email, ID), view associated drama titles with direct edit links, search/filter by drama or user, edit comment text via a modal dialog, and permanently delete comments.
+*   [Website] Series Detail Interactive Comments: Added a Comments button next to Like/Save/Share in the drama action bar and a complete comments section with user avatars, real-time relative timestamps, comment counter, and seamless sign-in modal triggers for guest users.
+*   [Android App] Material 3 Comments Bottom Sheet: Integrated `CommentsBottomSheet` across `DramaDetailScreen.kt`, `ShortsScreen.kt`, and `VideoPlayerScreen.kt`. Fixed an edge-to-edge layout issue where the Android 3-button system navigation bar (Back/Home/Recents) overlapped the comment input field by applying `navigationBarsPadding()` and `imePadding()` on a dedicated `Surface`, allowing comfortable typing above the software keyboard.
+*   [Flutter App] Comments Bottom Sheet: Integrated `CommentsBottomSheet` across `drama_detail_screen.dart`, `shorts_screen.dart`, and `video_player_screen.dart`.
+*   [Backend API] Comments Endpoints: Implemented `/api/comments` and `/api/mobile/v1/comments` (GET, POST, DELETE) with MongoDB persistence, supporting both session-based web auth and mobile API keys.
+
+PAYMENT GATEWAY & IN-APP PURCHASE FIXES
+*   [Backend / Mobile] Fixed "Purchase verification failed" across all Payment Gateways: Resolved a critical issue where backend actions stripped payment secrets (Stripe Secret Key, PayPal Secret, Razorpay Secret, Flutterwave Secret, Cashfree Secret, PayU Salt) from memory. Introduced `getServerPaymentSettings()` to securely retain API secrets during server-side verification.
+*   [Backend / Mobile] Fixed Google Play & In-App Purchase Verification 401 Unauthorized: Updated `/api/mobile/v1/verify-purchase` to accept valid mobile client credentials (`X-API-Key`) without strictly requiring Bearer session tokens.
+*   [Backend] Added resilient Coin Pack resolution: The backend now matches packs by both internal MongoDB `_id` and Google Play Product IDs (`googleProductId`), ensuring accurate coin crediting across all platforms.
+*   [Backend] Fixed `WEB_DIRECT` WebView payment redirects: Prevented direct in-app gateway completions from throwing unhandled session retrieval errors.
+*   [Android App] Added Bearer token forwarding and HTTP response error logging to `verifyPurchase()` in `SnapReelsRepository.kt`.
+
+INSTALLATION WIZARD & LICENSE ACTIVATION FIXES
+*   [Installation Wizard] Resilient License Verification: Resolved `Unexpected token '<', "<!DOCTYPE "... is not valid JSON` when activating licenses in Step 1 of `/install`.
+*   [Backend / MongoDB] Safe Database Initialization: Refactored `mongodb.ts` to prevent top-level module crashes when `MONGODB_URI` is not yet configured, enabling the installer to load and verify licenses before database setup.
+*   [Installation Wizard] Triple-Fallback Activation: Updated `install-wizard.tsx` with a multi-layered verification strategy: local API route -> safe Server Action fallback -> direct CORS validation against `devsnaplix-api.gadohost.com`.
+*   [Central Licensing API] CORS Support: Added full CORS headers (`OPTIONS`, `Access-Control-Allow-Origin: *`) to `devsnaplix-api` for seamless direct browser validation.
+
+BUILD & SERVER DEPLOYMENT OPTIMIZATIONS
+*   [Next.js Build] Resolved `pages-manifest.json` ENOENT Error: Added `src/pages/_app.tsx` and `src/pages/_document.tsx` alongside Webpack compiler hooks in `next.config.ts`, ensuring Next.js 15 App Router never fails with missing `pages-manifest.json` on GadoHost, cPanel, or Docker.
+*   [Build Scripts] Clean Cross-Platform NPM Scripts: Removed `cross-env NODE_OPTIONS=--max-old-space-size=2048` and prebuild scripts from `package.json`, resolving `sh: 1: cross-env: not found` errors on minimal Linux servers/VPS while keeping memory optimizations inside `next.config.ts`.
+
+CONTENT & CUSTOM PAGES FIXES
+*   [Website / Admin] Fixed text bunching and formatting on Custom Pages (`/p/[slug]`): Implemented structured HTML formatting (`page-formatter.ts`), line-break retention, and enhanced the Admin Custom Page Editor with an interactive toolbar (bold, lists, headings) and live preview.
+
+
+Version 1.2.1 - 19-10-2026
+----------------------------------------
+COIN REWARDS & DAILY BONUS FIXES
+*   [Backend / Mobile] Fixed "Claim Today's Reward Bonus" failing with 401 Unauthorized: Updated `/api/user/[uid]/checkin` and `performDailyCheckInAction` to properly validate mobile requests via `X-API-Key` and Firebase Bearer tokens instead of failing on missing browser cookies.
+*   [Backend / Mobile] Fixed Invitation Code redemption returning "Unauthorized": Updated `/api/mobile/v1/referral/claim` and `claimReferralCodeAction` to authenticate mobile app requests and credit bonus coins to both referrer and invitee.
+*   [Backend / Mobile] Fixed Rewarded Ad coin claim crashing with "Failed to claim reward": Resolved a critical 500 runtime error in `/api/user/[uid]/claim` caused by an uninitialized database connection instance (`ReferenceError: db is not defined`). Users now immediately receive coins after completing rewarded video ads.
+*   [Backend / Mobile] Upgraded `verifyUserSession` in `auth.ts` to inspect incoming headers (`X-API-Key` and `Authorization: Bearer <token>`) ensuring seamless authentication between native mobile clients and backend actions.
+
+DEEP LINKS & APP SHARING FIXES
+*   [Deep Linking] Fixed Android App Links & Direct Opening: Updated the `/share/[id]` landing page to construct Android Intent deep links so tapping "Watch in SnapReels App" directly launches the app into the corresponding drama.
+*   [Branding / Share] Synchronized dynamic branding on `/share/[id]`: The share page now dynamically pulls the custom Site Logo configured in Admin Panel (`/admin/settings/general`) instead of static default assets.
+*   [Admin / Deep Linking] Automated Digital Asset Links (`/.well-known/assetlinks.json`): Dynamically serves all configured SHA-256 app certificate fingerprints from Admin Mobile Settings (`/admin/settings/mobile`).
+
+MOBILE EPISODE UNLOCK & AD REWARD FIXES
+*   [Android App] Fixed "Watch Ad to Unlock" failing with "Please try again": Replaced unsafe `context as? Activity` casting with robust `context.findActivity()` to safely unwrap Compose `ContextWrapper` / `ContextThemeWrapper`.
+*   [Android App] Added SDK pre-initialization (`initSdk`) before loading Rewarded and Interstitial ads in `AdsManager` to prevent AdMob silent load drops.
+*   [Android App] Improved AdMob error handling: The player now surfaces real diagnostic messages (e.g., No Fill, Invalid Ad ID) instead of generic error toasts.
+*   [Android App] Attached Firebase ID Token and added detailed HTTP error logging to `unlockEpisode()`, `claimRewardOnBackend()`, and `createCheckoutSession()` in `SnapReelsRepository`.
+*   [Backend / Mobile] Fixed "Unlock with Coins" failing with 401 Unauthorized: Updated `/api/user/[uid]/unlock` and `/claim` to properly authorize native mobile requests via `X-API-Key` without requiring Bearer tokens.
+*   [Backend / Mobile] Created shared `mobile-auth.ts` helper with multi-key fallback support to ensure seamless authentication across mobile client builds.
+*   [Backend / Mobile] Fixed previous episode unlock verification in `/api/user/[uid]/unlock` to accurately query both string and ObjectId episode references.
+*   [Backend / Mobile] Synchronized daily ad unlock limits across the unlock endpoint with Admin Panel settings (`admobRewardedLimit`).
+
+AI & STORAGE FIXES
+*   [Backend] Fixed AI Generation failure across Groq, Gemini, and OpenAI: Resolved an issue where server actions stripped API keys in memory. Created `getServerPluginsSettings()` for secure backend model calls.
+*   [Backend] Upgraded Groq model list with dynamic active model discovery and failover to `qwen/qwen3.8-27b` and `openai/gpt-oss-120b`.
+*   [Backend] Fixed DigitalOcean Spaces image upload URL construction: Prevented duplicate bucket prefix injection into S3 endpoints that triggered TLS certificate mismatch errors (`ERR_TLS_CERT_ALTNAME_INVALID`).
+*   [Backend] Fixed Contact form Google reCAPTCHA server verification by preserving server secrets in `mailbox/send`.
+
+Version 1.2.0 - 10-10-2026
+----------------------------------------
+NEW FEATURES & ENHANCEMENTS
+*   [Feature] Integrated Bunny.net Stream API backend support for multi-quality adaptive HLS streaming.
+*   [Feature] Premium HD Paywall: Monetize your high-quality 1080p bandwidth by requiring users to pay coins to unlock the HD stream.
+*   [Feature] Analytics Widget Library: Added over 30 customizable Widgets in Admin Analytics for advanced real-time data tracking and charting.
+*   [Feature] Universal Webhook System: Added automated webhook endpoints for Stripe, PayPal, Razorpay, Flutterwave, Cashfree, and PayU to automatically credit users for background payments.
+*   [Feature] Google Play RTDN: Integrated Google Play Real-Time Developer Notifications to handle automatic VIP subscription renewals in the background.
+*   [Feature] Restore Purchases: Added automatic purchase syncing to the Android App to restore active VIP subscriptions upon app launch.
+*   [Feature] Deep Linking & App Links: Added support for Multiple Android SHA-256 App Certificate Fingerprints in the Admin Panel for flawless deep linking.
+
+UI / UX IMPROVEMENTS
+*   [UI/UX] Redesigned the Website Series Detail page with a sticky backdrop-blurred navbar, collapsible "Read More" synopsis, and horizontal scrollable episodes for a better mobile experience.
+*   [UI/UX] Added sleek hover animations for genre tags, episode padlock overlays, and scale animations for primary action buttons on the Website.
+*   [UI/UX] Added a sleek, modern custom scrollbar for horizontal episode lists on desktop browsers.
+*   [UI/UX] Added Cashfree, PhonePe, and PayU payment method logos to the Android App and Flutter App with perfectly uniform rounded designs.
+
+NATIVE ANDROID & FLUTTER UPDATES
+*   [Android App] Configured ExoPlayer with HlsMediaSource to correctly parse and stream secured multi-quality HLS m3u8 playlists.
+*   [Android App] Added a new "1080p Upgrade" overlay button inside the Native Video Player when HD is locked.
+*   [Flutter App] Upgraded Flutter Android build configuration to SDK 36 and integrated HD premium overlay features.
+*   [Flutter App] Updated configuration for Envato compliance (removed hardcoded Firebase keys/URLs, replaced default placeholder tests, updated README).
+
+BUG FIXES
+*   [Backend] Created an HLS proxy API route using Google Identity Toolkit to securely sign and manipulate Bunny .m3u8 manifests dynamically based on HD unlock status.
+*   [Backend] Fixed a major checkout issue where selecting Cashfree, PhonePe, or PayU would display a "No Payment Methods" error on the wallet page.
+*   [Backend] Fully implemented real API Session Generation for Cashfree Orders, PhonePe Checksum / X-VERIFY, and PayU HTML Forms.
+*   [Android App] Fixed a critical issue where Google Play IAP successfully charged the user but failed to credit coins. The app now strictly sends the purchaseToken for backend validation.
+*   [Android App] Fixed a bug in the Checkout WebView where PayU's auto-submitting base64 URIs failed to load.
+*   [Android App] Fixed a massive memory leak in TopUpScreen where Google Play BillingClient connections were not being properly closed.
+*   [Android App] Fixed compilation errors by migrating legacy MediaType.parse and RequestBody.create network calls to OkHttp 4 extension functions.
+*   [Android App] Restored missing isHdUnlocked logic to properly support 1080p HD episode unlocking.
+*   [Flutter App] Fixed massive UI rebuild loops and performance issues in home_screen.dart and video_player_screen.dart.
+*   [Flutter App] Fixed API error swallowing in the network layer to ensure proper error messages are displayed to users.
+*   [Mobile Apps] Fixed an issue where the device screen would turn off (Sleep Mode) while watching long videos by enforcing Screen Wakelock during playback.
+*   [Mobile Apps] Fixed an issue where the Like button icon would turn red but the like count would incorrectly remain at 0 by implementing optimistic UI updates.
+*   [Mobile Apps] Re-enabled internal views tracking and synchronized the "Top 10 / Most Viewed" sorting logic to update based on real user watch counts.
+*   [Website] Fixed an issue where the WebVTT subtitle track was obscured by custom video controls by adjusting vertical offset and adding a translucent background.
+*   [Website] Fixed a routing bug when selecting a language, replacing hard reloads with Next.js SPA router transitions.
+*   [Website] Fixed a mobile responsiveness issue where long titles caused horizontal overflow and broke the layout.
+*   [Website] Added missing ARIA labels and alt tags across the Header, Footer, and Video Player to improve accessibility and SEO compliance.
+*   [Website] Fixed an issue where the "GET THE APP" title in the footer would still appear when Store links were left empty in the Admin settings.
+
+
+V1.1.9 - 16-09-2026
+
